@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>单词自测 · 考研版</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, "Microsoft YaHei", sans-serif;
+    background: #101317; color: #e8e6e1;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 24px 16px 48px;
+  }
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 { font-size: 22px; letter-spacing: 1px; }
+  header p { color: #9aa3ad; font-size: 13px; margin-top: 6px; }
+  .card {
+    width: 100%; max-width: 520px;
+    background: #1a1f26; border: 1px solid #2a313b; border-radius: 16px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .tabs { display: flex; gap: 8px; max-width: 520px; width: 100%; margin-bottom: 16px; }
+  .tabs button {
+    flex: 1; padding: 10px; border-radius: 12px; border: 1px solid #2a313b;
+    background: #1a1f26; color: #9aa3ad; font-size: 15px; cursor: pointer;
+  }
+  .tabs button.active { background: #f6c945; color: #1a1405; border-color: #f6c945; font-weight: bold; }
+  textarea {
+    width: 100%; height: 220px; background: #101317; color: #e8e6e1;
+    border: 1px solid #2a313b; border-radius: 12px; padding: 12px;
+    font-size: 14px; line-height: 1.7; resize: vertical;
+  }
+  .btn {
+    display: block; width: 100%; padding: 12px; margin-top: 12px;
+    border: none; border-radius: 12px; font-size: 15px; cursor: pointer;
+    background: #f6c945; color: #1a1405; font-weight: bold;
+  }
+  .btn.ghost { background: #242b34; color: #e8e6e1; }
+  .hint { color: #9aa3ad; font-size: 12.5px; line-height: 1.8; margin-top: 10px; }
+  .mode-row { display: flex; gap: 10px; }
+  .mode-row .btn { margin-top: 0; }
+  .progress { height: 8px; background: #242b34; border-radius: 99px; overflow: hidden; margin-bottom: 18px; }
+  .progress i { display: block; height: 100%; background: #f6c945; width: 0; transition: width .3s; }
+  .qword { font-size: 34px; font-weight: bold; text-align: center; margin: 10px 0 4px; }
+  .qsub { text-align: center; color: #9aa3ad; font-size: 13px; margin-bottom: 18px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opts button {
+    padding: 14px 10px; border-radius: 12px; border: 1px solid #2a313b;
+    background: #222932; color: #e8e6e1; font-size: 14.5px; cursor: pointer; line-height: 1.5;
+  }
+  .opts button.correct { background: #1d4a2c; border-color: #35c46a; }
+  .opts button.wrong { background: #4a1d22; border-color: #ff5d5d; }
+  .opts button:disabled { cursor: default; opacity: .92; }
+  .spell input {
+    width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #2a313b;
+    background: #101317; color: #e8e6e1; font-size: 18px; text-align: center; outline: none;
+  }
+  .feedback { min-height: 24px; margin-top: 14px; font-size: 14.5px; text-align: center; line-height: 1.6; }
+  .feedback.ok { color: #35c46a; }
+  .feedback.no { color: #ff5d5d; }
+  .meta { display: flex; justify-content: space-between; color: #9aa3ad; font-size: 13px; margin-bottom: 12px; }
+  .end-score { text-align: center; padding: 8px 0 4px; }
+  .end-score b { font-size: 42px; color: #f6c945; }
+  .end-score p { color: #9aa3ad; margin-top: 6px; }
+  .hidden { display: none; }
+  .wronglist { font-size: 13px; color: #ff9b9b; line-height: 2; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐧 单词自测 · 考研版</h1>
+  <p>我的第一个自己发布的小工具</p>
+</header>
+
+<div class="tabs">
+  <button id="tabLib" onclick="showLib()">📚 词库</button>
+  <button id="tabQuiz" onclick="showQuizMode()">📝 测验</button>
+</div>
+
+<!-- 词库页 -->
+<div id="libView" class="card">
+  <textarea id="wordInput" spellcheck="false" placeholder="一行一个词，格式：单词 释义&#10;例如：abandon v. 放弃；抛弃"></textarea>
+  <button class="btn" onclick="saveList()">💾 保存词库</button>
+  <button class="btn ghost" onclick="loadSample()">载入示例词（12 个考研词）</button>
+  <p class="hint">每行一个词：先英文，空一格，后面全是中文释义。存好后切到「测验」开测。词库保存在你自己设备上，换设备需重新粘贴。</p>
+</div>
+
+<!-- 模式选择页 -->
+<div id="modeView" class="card hidden">
+  <p class="hint" style="margin:0 0 12px">当前词库：<b id="libCount" style="color:#f6c945"></b> 个词。选个玩法：</p>
+  <div class="mode-row">
+    <button class="btn" onclick="start('choice')">👀 认词（英→中 4 选 1）</button>
+    <button class="btn ghost" onclick="start('spell')">✍️ 拼写（中→英）</button>
+  </div>
+</div>
+
+<!-- 答题页 -->
+<div id="quizView" class="card hidden">
+  <div class="meta"><span id="pos">1 / 10</span><span id="score">✔ 0</span></div>
+  <div class="progress"><i id="bar"></i></div>
+  <div id="qWord" class="qword"></div>
+  <div id="qSub" class="qsub"></div>
+  <div id="optBox" class="opts"></div>
+  <div id="spellBox" class="spell hidden">
+    <input id="spellInput" placeholder="拼出英文并回车" autocomplete="off" autocapitalize="off">
+  </div>
+  <div id="fb" class="feedback"></div>
+  <button id="nextBtn" class="btn hidden" onclick="next()">下一个 →</button>
+</div>
+
+<!-- 结算页 -->
+<div id="endView" class="card hidden">
+  <div class="end-score">
+    <b id="finalPct">0%</b>
+    <p id="finalLine"></p>
+    <div id="wrongLine" class="wronglist"></div>
+  </div>
+  <button class="btn" onclick="showQuizMode()">🔄 换个模式再来</button>
+  <button id="wrongBtn" class="btn ghost hidden" onclick="start(currentMode, true)">🔥 只练刚才的错词</button>
+</div>
+
+<script>
+const SAMPLE = `abandon v. 放弃；抛弃
+abundant adj. 丰富的；充裕的
+accommodate v. 容纳；使适应
+acquire v. 获得；习得
+advocate v. 提倡 n. 拥护者
+ambiguous adj. 模棱两可的
+anticipate v. 预期；预料
+appropriate adj. 恰当的
+compensate v. 补偿；弥补
+comprehensive adj. 全面的；综合的
+contradict v. 反驳；与…矛盾
+inevitable adj. 不可避免的`;
+
+const KEY = 'wordquiz_list';
+let words = [], mode = 'choice', queue = [], idx = 0, ok = 0, wrong = [], answering = false;
+let $ = id => document.getElementById(id);
+
+function parse(text) {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const sp = l.indexOf(' ');
+    return sp < 0 ? { en: l, zh: '（没写释义）' } : { en: l.slice(0, sp), zh: l.slice(sp + 1) };
+  });
+}
+
+function saveList() {
+  const list = parse($('wordInput').value);
+  if (!list.length) return alert('先粘贴至少一个词');
+  words = list;
+  localStorage.setItem(KEY, $('wordInput').value);
+  alert('已保存 ' + list.length + ' 个词');
+  showQuizMode();
+}
+
+function loadSample() {
+  $('wordInput').value = SAMPLE;
+  localStorage.setItem(KEY, SAMPLE);
+  words = parse(SAMPLE);
+  showQuizMode();
+}
+
+function showLib() {
+  $('tabLib').classList.add('active'); $('tabQuiz').classList.remove('active');
+  ['modeView', 'quizView', 'endView'].forEach(v => $(v).classList.add('hidden'));
+  $('libView').classList.remove('hidden');
+}
+
+function showQuizMode() {
+  if (!words.length) {
+    const saved = localStorage.getItem(KEY);
+    if (saved) { $('wordInput').value = saved; words = parse(saved); }
+  }
+  $('tabQuiz').classList.add('active'); $('tabLib').classList.remove('active');
+  ['libView', 'quizView', 'endView'].forEach(v => $(v).classList.add('hidden'));
+  if (words.length < 2) {
+    $('modeView').classList.remove('hidden');
+    $('libCount').textContent = words.length;
+    $('libCount').style.color = '#ff5d5d';
+    return;
+  }
+  $('modeView').classList.remove('hidden');
+  $('libCount').textContent = words.length;
+  $('libCount').style.color = '#f6c945';
+}
+
+function shuffle(a) { return a.sort(() => Math.random() - .5); }
+
+function start(m, onlyWrong) {
+  mode = m;
+  const src = (onlyWrong && wrong.length) ? wrong : words;
+  queue = shuffle(src.slice());
+  wrong = []; idx = 0; ok = 0;
+  ['libView', 'modeView', 'endView'].forEach(v => $(v).classList.add('hidden'));
+  $('quizView').classList.remove('hidden');
+  next(true);
+}
+
+function ask() {
+  answering = false;
+  const w = queue[idx];
+  $('pos').textContent = (idx + 1) + ' / ' + queue.length;
+  $('score').textContent = '✔ ' + ok;
+  $('bar').style.width = (idx / queue.length * 100) + '%';
+  $('fb').textContent = ''; $('fb').className = 'feedback';
+  $('nextBtn').classList.add('hidden');
+
+  if (mode === 'choice') {
+    $('spellBox').classList.add('hidden');
+    $('qWord').textContent = w.en; $('qSub').textContent = '选出正确释义';
+    const others = shuffle(words.filter(x => x.en !== w.en)).slice(0, 3).map(x => x.zh);
+    const opts = shuffle(others.concat(w.zh));
+    $('optBox').innerHTML = '';
+    $('optBox').classList.remove('hidden');
+    opts.forEach(o => {
+      const b = document.createElement('button');
+      b.textContent = o;
+      b.onclick = () => { if (!answering) answer(o === w.zh, b, w); };
+      $('optBox').appendChild(b);
+    });
+  } else {
+    $('optBox').classList.add('hidden'); $('optBox').innerHTML = '';
+    $('spellBox').classList.remove('hidden');
+    $('qWord').textContent = w.zh; $('qSub').textContent = '拼出对应的英文单词';
+    const inp = $('spellInput');
+    inp.value = ''; inp.disabled = false; inp.focus();
+    inp.onkeydown = e => { if (e.key === 'Enter' && !answering && inp.value.trim()) answer(inp.value.trim().toLowerCase() === w.en.toLowerCase(), null, w); };
+  }
+}
+
+function answer(right, btn, w) {
+  answering = true;
+  if (right) {
+    ok++;
+    $('fb').textContent = '✅ 对！'; $('fb').className = 'feedback ok';
+    if (btn) btn.classList.add('correct');
+  } else {
+    wrong.push(w);
+    $('fb').innerHTML = mode === 'choice'
+      ? '❌ 正确答案：<b>' + w.zh + '</b>'
+      : '❌ 正确拼写：<b>' + w.en + '</b>';
+    $('fb').className = 'feedback no';
+    if (btn) btn.classList.add('wrong');
+    document.querySelectorAll('#optBox button').forEach(b => { if (b.textContent === w.zh) b.classList.add('correct'); });
+  }
+  document.querySelectorAll('#optBox button').forEach(b => b.disabled = true);
+  $('spellInput').disabled = true;
+  $('nextBtn').classList.remove('hidden');
+  $('nextBtn').textContent = idx + 1 >= queue.length ? '看成绩 →' : '下一个 →';
+}
+
+function next(first) {
+  if (!first) idx++;
+  if (idx >= queue.length) return finish();
+  ask();
+}
+
+function finish() {
+  $('quizView').classList.add('hidden');
+  $('endView').classList.remove('hidden');
+  const pct = Math.round(ok / queue.length * 100);
+  $('finalPct').textContent = pct + '%';
+  $('finalLine').textContent = '共 ' + queue.length + ' 词，答对 ' + ok + ' 个' +
+    (pct === 100 ? '，全对，咕咕嘎嘎都为你骄傲 🐧' : pct >= 80 ? '，稳的，错词再滚一遍' : '，错词有点多，来一轮只练错词');
+  $('wrongLine').textContent = wrong.length ? '错词：' + wrong.map(w => w.en).join('、') : '';
+  $('wrongBtn').classList.toggle('hidden', !wrong.length);
+}
+
+showQuizMode();
+</script>
+</body>
+</html>
