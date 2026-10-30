@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>单词自测 · 考研版</title>
+<title>单词自测 · 六级版</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -70,8 +70,8 @@
 <body>
 
 <header>
-  <h1>🐧 单词自测 · 考研版</h1>
-  <p>我的第一个自己发布的小工具</p>
+  <h1>🐧 单词自测 · 六级版</h1>
+  <p>生词本 · 由咕咕嘎嘎整理</p>
 </header>
 
 <div class="tabs">
@@ -83,8 +83,8 @@
 <div id="libView" class="card">
   <textarea id="wordInput" spellcheck="false" placeholder="一行一个词，格式：单词 释义&#10;例如：abandon v. 放弃；抛弃"></textarea>
   <button class="btn" onclick="saveList()">💾 保存词库</button>
-  <button class="btn ghost" onclick="loadSample()">载入示例词（12 个考研词）</button>
-  <p class="hint">每行一个词：先英文，空一格，后面全是中文释义。存好后切到「测验」开测。词库保存在你自己设备上，换设备需重新粘贴。</p>
+  <button class="btn ghost" onclick="loadSample()">🔄 恢复默认词库（咕咕嘎嘎生词 ×90）</button>
+  <p class="hint">每行一个词：先英文，空一格，后面全是中文释义。默认词库已内置咕咕嘎嘎整理的 90 个生词；在页面里保存的修改只存在当前设备，换设备会自动回到默认词库。</p>
 </div>
 
 <!-- 模式选择页 -->
@@ -122,20 +122,98 @@
 </div>
 
 <script>
-const SAMPLE = `abandon v. 放弃；抛弃
-abundant adj. 丰富的；充裕的
-accommodate v. 容纳；使适应
-acquire v. 获得；习得
-advocate v. 提倡 n. 拥护者
-ambiguous adj. 模棱两可的
-anticipate v. 预期；预料
-appropriate adj. 恰当的
-compensate v. 补偿；弥补
-comprehensive adj. 全面的；综合的
-contradict v. 反驳；与…矛盾
-inevitable adj. 不可避免的`;
+const SAMPLE = `eliminate 消除；淘汰
+interaction 互动；相互作用
+attribute 把…归因于；属性
+stock 股票；库存
+consult 咨询；查阅
+ingredient 成分；原料
+property 财产；性质
+fatigue 疲劳
+thrive 兴旺；茁壮成长
+modify 修改
+reform 改革
+orchestrate 精心策划
+overhaul 彻底检修；全面改革
+sophisticated 复杂精密的；老练的
+narrative 叙事；叙述
+controversy 争议
+compel 强迫
+formula 公式；配方
+confront 面对
+adverse 不利的
+obligation 义务；责任
+penalty 处罚
+premium 保险费；溢价
+negotiate 谈判；协商
+rigorous 严格的；缜密的
+subtle 微妙的
+prime 首要的；全盛期
+facilitate 促进
+deteriorate 恶化
+intimidate 恐吓；威胁
+merge 合并
+myth 神话；迷思
+prejudice 偏见
+prestige 声望
+render 使成为；提供
+strive 努力；奋斗
+subsidy 补贴
+summit 峰会；顶峰
+toxic 有毒的
+transaction 交易
+tuition 学费
+adhere 粘附；坚持
+alleviate 缓解
+allocate 分配
+cholesterol 胆固醇
+contaminate 污染
+curb 控制；抑制
+dictate 命令；支配
+immune 免疫的；不受影响的
+bacteria 细菌
+dean 院长；系主任
+faithful 忠实的
+simultaneous 同时的
+treaty 条约
+assert 断言；主张
+notorious 臭名昭著的
+chronically 长期地；慢性地
+eject 弹出；驱逐
+unexcused 未经准假的
+deplore 谴责
+align 对齐；使一致
+allege 断言；指控
+allure 诱惑；魅力
+amplify 放大；增强
+assemble 集合；装配
+orientation 定位；迎新；取向
+compact 紧凑的；契约
+compound 加剧；化合物
+consecutive 连续的
+conspicuous 显眼的；惹人注目的
+decay 衰退；腐烂
+descendant 后代
+desperation 绝望
+elaborate 精心制作的；详尽阐述
+elicit 诱出；引出
+ethnic 民族的；种族的
+enlighten 启发；开导
+hierarchy 等级制度
+hygiene 卫生
+imperial 帝国的
+isolate 隔离；使孤立
+liberal 开明的；自由主义的
+mansion 大厦；豪宅
+magnetic 磁性的；有吸引力的
+complication 并发症；复杂化
+prone 易于…的；俯卧的
+decline 下降；衰退；婉拒
+grim 严峻的；糟糕的
+unprecedented 空前的
+awakening 觉醒；唤醒`;
 
-const KEY = 'wordquiz_list';
+const KEY = 'wordquiz_list_v2';
 let words = [], mode = 'choice', queue = [], idx = 0, ok = 0, wrong = [], answering = false;
 let $ = id => document.getElementById(id);
 
@@ -170,8 +248,9 @@ function showLib() {
 
 function showQuizMode() {
   if (!words.length) {
-    const saved = localStorage.getItem(KEY);
-    if (saved) { $('wordInput').value = saved; words = parse(saved); }
+    const saved = localStorage.getItem(KEY) ?? SAMPLE;
+    $('wordInput').value = saved;
+    words = parse(saved);
   }
   $('tabQuiz').classList.add('active'); $('tabLib').classList.remove('active');
   ['libView', 'quizView', 'endView'].forEach(v => $(v).classList.add('hidden'));
